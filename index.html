@@ -1169,22 +1169,22 @@ header {
         <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono';letter-spacing:1px;flex-shrink:0">PESO FORMA:</span>
         <div style="flex:1;min-width:220px;max-width:480px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">Solo histórico</span>
+            <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">Todo el histórico</span>
             <span style="font-family:'JetBrains Mono';font-size:12px;font-weight:700;color:var(--green)" id="live-form-weight-label">50%</span>
-            <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">Solo reciente</span>
+            <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">Último partido</span>
           </div>
-          <input id="live-form-weight" type="range" min="0" max="100" value="50" step="10"
+          <input id="live-form-weight" type="range" min="0" max="100" value="50" step="5"
             style="width:100%;accent-color:var(--green);cursor:pointer"
             oninput="document.getElementById('live-form-weight-label').textContent=this.value+'%';
                      document.getElementById('live-form-desc').textContent=
-                       +this.value===0?'Poisson clásico: media simple de toda la historia, sin ponderar.'
-                       :+this.value<=30?'Ligero peso a la forma: la historia manda, últimos partidos cuentan poco.'
-                       :+this.value<=50?'Equilibrado: mitad historia, mitad forma reciente.'
-                       :+this.value<=70?'Mayor peso a la forma: los últimos partidos influyen bastante.'
-                       :'Forma dominante: el modelo se basa principalmente en los últimos partidos (decay=0.92).';
+                       +this.value===0?'Histórico completo: usa TODOS los partidos del equipo. Predicción muy estable.'
+                       :+this.value<=20?'Histórico amplio: usa la mayoría de partidos del equipo.'
+                       :+this.value<=50?'Equilibrado: usa unos 20-50 partidos por equipo (≈1-2 temporadas).'
+                       :+this.value<=80?'Forma reciente: usa solo los últimos 5-15 partidos. Predicción más reactiva.'
+                       :'Última actuación: usa muy pocos partidos. ⚠️ Mucha varianza, úsalo con criterio.';
                      if(liveMatches.length) renderLiveResults(liveMatches);">
           <div id="live-form-desc" style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-top:3px">
-            Equilibrado: mitad historia, mitad forma reciente.
+            Equilibrado: usa unos 20-50 partidos por equipo (≈1-2 temporadas).
           </div>
         </div>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--text2);max-width:220px">
@@ -1301,7 +1301,7 @@ header {
         <!-- Form weight slider -->
         <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono';letter-spacing:1px">PESO DE LA FORMA RECIENTE</div>
+            <div style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono';letter-spacing:1px">VENTANA DEL MODELO</div>
             <div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--accent)" id="form-weight-label">50%</div>
           </div>
           <input id="calc-form-weight" type="range" min="0" max="100" value="50" step="5"
@@ -1309,20 +1309,20 @@ header {
             oninput="
               const v=+this.value;
               document.getElementById('form-weight-label').textContent=v+'%';
-              const desc = v===0?'Solo histórico: usa la media de toda la temporada sin ponderar.'
-                :v<=25?'Ligero peso a la forma: la historia manda, pero los últimos partidos cuentan un poco.'
-                :v<=50?'Equilibrado: mitad historia, mitad forma reciente.'
-                :v<=75?'Mayor peso a la forma: los últimos partidos influyen bastante.'
-                :'Forma dominante: el modelo se basa principalmente en los últimos partidos.';
+              const desc = v===0?'Todo el histórico: usa TODOS los partidos del equipo. Predicción muy estable.'
+                :v<=20?'Histórico amplio: cientos de partidos por equipo.'
+                :v<=50?'Equilibrado: unos 20-50 partidos por equipo (≈1-2 temporadas).'
+                :v<=80?'Forma reciente: solo los últimos 5-15 partidos. Más reactivo.'
+                :'Última actuación: muy pocos partidos. ⚠️ Mucha varianza.';
               document.getElementById('form-weight-desc').textContent=desc;
               runCalc()" >
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-top:4px">
-            <span>Solo histórico</span>
+            <span>Todo el histórico</span>
             <span>Equilibrado</span>
-            <span>Solo forma reciente</span>
+            <span>Último partido</span>
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:6px" id="form-weight-desc">
-            Mezcla al 50%: igual peso entre toda la historia y los últimos partidos.
+            Equilibrado: unos 20-50 partidos por equipo (≈1-2 temporadas).
           </div>
         </div>
       </div>
@@ -1968,11 +1968,10 @@ function renderGoalsSimulation(bookie = 'Avg', teamsFilter = new Set(), seasons 
 
   // Build weighted prob_over for each match if formWeight > 0
   function getWeightedProbs(r, fw) {
-    if (fw === 0) return { prob_over: r.prob_over, prob_under: r.prob_under };
     const p = BetEdgeModel.predict({
       home: r.home, away: r.away,
       historicalData: RAW,
-      formWeight: fw,
+      slider: fw,
       dateLimit: r.date,
     });
     return { prob_over: p.prob_over, prob_under: p.prob_under };
@@ -2357,11 +2356,10 @@ function renderResultSimulation(bookie, outcome, seasons, conviction, teamsFilte
   const rFormWeight = +(document.getElementById('r-form-weight')?.value || 50) / 100;
 
   function getWeightedProbs1x2(r, fw) {
-    if (fw === 0) return { model_h: r.model_h, model_d: r.model_d, model_a: r.model_a };
     const p = BetEdgeModel.predict({
       home: r.home, away: r.away,
       historicalData: RAW,
-      formWeight: fw,
+      slider: fw,
       dateLimit: r.date,
     });
     return { model_h: p.model_h, model_d: p.model_d, model_a: p.model_a };
@@ -2780,11 +2778,11 @@ async function loadLiveOdds() {
       const bestBkA = Object.entries(bookOdds).filter(([,b])=>b.a).sort((a,b)=>b[1].a-a[1].a)[0]?.[0];
 
       // Poisson model probs — usa el modelo unificado (BetEdgeModel)
-      const fwLive = +(document.getElementById('live-form-weight')?.value || 50) / 100;
+      const sliderLive = +(document.getElementById('live-form-weight')?.value || 50) / 100;
       const pred = BetEdgeModel.predict({
         home, away,
         historicalData: RAW,
-        formWeight: fwLive,
+        slider: sliderLive,
       });
       const mh = pred.model_h, md = pred.model_d, ma = pred.model_a;
       const eg = pred.exp_goals;
@@ -2927,8 +2925,8 @@ function renderLiveResults(matches) {
       <!-- ── EXPANDED CONTENT ── -->
       <div style="padding:16px;border-top:1px solid var(--border)">
         <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-bottom:12px">
-          Peso forma reciente: <strong style="color:var(--green)">${document.getElementById('live-form-weight')?.value||50}%</strong>
-          · ${+( document.getElementById('live-form-weight')?.value||50)===0?'Poisson clásico':+( document.getElementById('live-form-weight')?.value||50)<=50?'modelo equilibrado':'forma reciente dominante'}
+          Ventana del modelo: <strong style="color:var(--green)">${document.getElementById('live-form-weight')?.value||50}%</strong>
+          · ${+( document.getElementById('live-form-weight')?.value||50)===0?'todo el histórico':+( document.getElementById('live-form-weight')?.value||50)<=50?'histórico amplio':+( document.getElementById('live-form-weight')?.value||50)<=80?'forma reciente':'última actuación (alta varianza)'}
         </div>
 
         ${show1x2 ? `
@@ -3052,17 +3050,20 @@ function runCalc() {
   }
 
   // ── MODELO: usa BetEdgeModel unificado ──────────────────────────────────────
-  // La calculadora usa la lógica "ventana de 4 temporadas si hay datos, si no todo"
-  const useData = BetEdgeModel.selectTrainingData(RAW, home, away, 8);
+  // El slider ya gestiona el tamaño de la ventana, así que usamos TODO el histórico.
+  // 0 = todos los partidos del equipo, 1 = solo el último.
+  const useData = RAW;
 
-  // Read the form weight slider value
-  const formWeight = +(document.getElementById('calc-form-weight')?.value || 50) / 100; // 0–1
+  // Slider 0–100 → 0–1 (semántica: 0=todo histórico, 1=último partido)
+  const slider = +(document.getElementById('calc-form-weight')?.value || 50) / 100;
+  // Alias retro-compatible con el código que aún lee formWeight
+  const formWeight = slider;
 
-  // Predicción canónica (incluye 1X2, O/U, lambdas, exp_goals)
+  // Predicción canónica (incluye 1X2, O/U, lambdas, exp_goals, samples)
   const prediction = BetEdgeModel.predict({
     home, away,
     historicalData: useData,
-    formWeight,
+    slider,
   });
   const lamH = prediction.lamH;
   const lamA = prediction.lamA;
@@ -3200,7 +3201,7 @@ function runCalc() {
     <div class="card" style="text-align:center;padding:20px">
       <div style="font-size:22px;font-weight:700;margin-bottom:4px">${home} <span style="color:var(--text3);font-weight:400;font-size:16px">vs</span> ${away}</div>
       <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';margin-bottom:10px">
-        Modelo Poisson ponderado · peso forma reciente: <span style="color:var(--accent)">${formWeight*100}%</span> · ${useData.length} partidos de entrenamiento
+        Modelo Poisson · ventana: <span style="color:var(--accent)">${prediction.sample_h}/${prediction.sample_a} partidos</span> usados (de ${prediction.available_h}/${prediction.available_a} disponibles) · slider ${(slider*100).toFixed(0)}%
       </div>
       ${bestSignal
         ? `<div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.3);border-radius:8px;padding:10px 16px;color:var(--green);font-size:13px;font-weight:600">
@@ -3321,7 +3322,7 @@ function runCalc() {
           </div>`).join('')}
       </div>
       <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-top:10px">
-        λ local=${lamH.toFixed(2)} · λ visitante=${lamA.toFixed(2)} · decay=0.92 · peso forma=${formWeight*100}%
+        λ local=${lamH.toFixed(2)} · λ visitante=${lamA.toFixed(2)} · goles esperados=${prediction.exp_goals} · ventana=${prediction.sample_h}/${prediction.sample_a} partidos
       </div>
     </div>
 
