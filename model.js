@@ -23,18 +23,18 @@
 
   // ── Constantes del modelo (mover aquí cualquier "magic number") ─────────────
   const CONFIG = {
-    DECAY: 0.92,            // factor de decaimiento por partido (0.92 = ~50% peso a los 8 últimos)
-    WINDOW: 15,             // últimos N partidos por equipo para calcular forma
     LEAGUE_HOME_AVG: 1.45,  // goles medios del local en La Liga (histórico)
     LEAGUE_AWAY_AVG: 1.15,  // goles medios del visitante en La Liga
     HOME_ADV: 1.08,         // multiplicador de ventaja de localía
-    LAMBDA_MIN: 0.3,        // clip inferior de goles esperados (evita extremos)
-    LAMBDA_MAX: 4.5,        // clip superior
-    POISSON_K: 9,           // matriz de convolución K×K (9×9 cubre >99.9% prob)
+    LAMBDA_MIN: 0.2,        // clip inferior de goles esperados
+    LAMBDA_MAX: 6.0,        // clip superior (subido de 4.5 — antes aplastaba goleadas)
+    POISSON_K: 10,          // matriz de convolución K×K (10×10 = >99.99% prob acumulada)
     OU_LINE: 2.5,           // línea Over/Under
     FALLBACK_GF: 1.25,      // si un equipo no tiene historia, valor por defecto
     FALLBACK_GA: 1.15,
     RECENT_SEASONS: ['2022-23','2023-24','2024-25','2025-26'], // ventana "calculadora"
+    MIN_WINDOW: 1,          // mínimo partidos cuando slider=1 (último partido)
+    MAX_WINDOW: 500,        // máximo (en la práctica el equipo nunca tiene tantos)
   };
 
   // ── Helpers internos ────────────────────────────────────────────────────────
@@ -49,58 +49,69 @@
   // Clip a [min, max]
   function clip(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-  // ── Estadísticas ponderadas de un equipo ───────────────────────────────────
+  // ── Mapeo logarítmico slider → tamaño de ventana ───────────────────────────
   //
-  // historicalData: array de partidos (RAW completo o filtrado por temporada)
+  // El slider va de 0 a 1. Lo mapeamos así (escala logarítmica):
+  //   slider=0   → ventana = total partidos del equipo (TODO el histórico)
+  //   slider=0.5 → ventana ≈ √(total) partidos
+  //   slider=1   → ventana = 1 (solo último partido)
+  //
+  // Logarítmica porque la diferencia estadística entre 380 y 200 partidos es
+  // mínima (medias muy estables); la diferencia entre 5 y 2 partidos es enorme.
+  // El usuario necesita resolución fina en la zona pequeña.
+  function windowSizeFromSlider(slider, totalAvailable) {
+    if (totalAvailable <= 1) return totalAvailable;
+    const s = clip(slider, 0, 1);
+    if (s === 0) return totalAvailable;
+    if (s === 1) return CONFIG.MIN_WINDOW;
+    // Interpolación log: n = total^(1-s)
+    // s=0 → n=total; s=1 → n=1; s=0.5 → n=√total
+    const n = Math.round(Math.pow(totalAvailable, 1 - s));
+    return clip(n, CONFIG.MIN_WINDOW, totalAvailable);
+  }
+
+  // ── Estadísticas de un equipo (ventana variable, sin decay, sin blending) ──
+  //
+  // historicalData: array de partidos (RAW o subset filtrado)
   // team:           nombre del equipo
-  // isHome:         true → estadísticas como local, false → como visitante
-  // formWeight:     [0..1] — 0 = media simple, 1 = solo ponderado por forma
-  // dateLimit:      string 'YYYY-MM-DD' opcional — solo cuenta partidos ANTERIORES
-  //                 (para evitar data leakage en backtests sobre histórico)
+  // isHome:         true → como local, false → como visitante
+  // slider:         [0..1] — 0 = todos los partidos, 1 = solo el último
+  // dateLimit:      'YYYY-MM-DD' opcional — solo partidos anteriores (anti data-leak)
   //
-  // Devuelve: { gf, ga, sample } — goles a favor/en contra esperados + tamaño muestra
-  function teamStats(historicalData, team, isHome, formWeight, dateLimit) {
+  // Devuelve: { gf, ga, sample, available } — goles esperados + tamaños
+  function teamStats(historicalData, team, isHome, slider, dateLimit) {
     const gKey  = isHome ? 'fthg' : 'ftag';
     const gaKey = isHome ? 'ftag' : 'fthg';
 
-    let matches = historicalData.filter(r =>
+    // Filtrar partidos del equipo en la posición correcta
+    let pool = historicalData.filter(r =>
       (isHome ? r.home === team : r.away === team) &&
       r[gKey] != null
     );
-    if (dateLimit) matches = matches.filter(r => r.date < dateLimit);
+    if (dateLimit) pool = pool.filter(r => r.date < dateLimit);
 
-    matches = matches
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, CONFIG.WINDOW);
+    // Ordenar más recientes primero
+    pool = pool.sort((a, b) => b.date.localeCompare(a.date));
 
-    if (!matches.length) {
-      return { gf: CONFIG.FALLBACK_GF, ga: CONFIG.FALLBACK_GA, sample: 0 };
+    if (!pool.length) {
+      return {
+        gf: CONFIG.FALLBACK_GF, ga: CONFIG.FALLBACK_GA,
+        sample: 0, available: 0,
+      };
     }
 
-    // Media simple
-    const simpleGF = matches.reduce((s, m) => s + (m[gKey]  || 0), 0) / matches.length;
-    const simpleGA = matches.reduce((s, m) => s + (m[gaKey] || 0), 0) / matches.length;
+    // Tamaño de ventana en función del slider
+    const windowN = windowSizeFromSlider(slider, pool.length);
+    const matches = pool.slice(0, windowN);
 
-    if (formWeight === 0) {
-      return { gf: simpleGF, ga: simpleGA, sample: matches.length };
-    }
+    // Media simple — sin decay, sin blending
+    const gf = matches.reduce((s, m) => s + (m[gKey]  || 0), 0) / matches.length;
+    const ga = matches.reduce((s, m) => s + (m[gaKey] || 0), 0) / matches.length;
 
-    // Media ponderada por decaimiento exponencial
-    let wgf = 0, wga = 0, ws = 0;
-    matches.forEach((m, i) => {
-      const w = Math.pow(CONFIG.DECAY, i);
-      wgf += (m[gKey]  || 0) * w;
-      wga += (m[gaKey] || 0) * w;
-      ws  += w;
-    });
-    const weightedGF = wgf / ws;
-    const weightedGA = wga / ws;
-
-    // Blend: forma reciente vs histórico
     return {
-      gf: weightedGF * formWeight + simpleGF * (1 - formWeight),
-      ga: weightedGA * formWeight + simpleGA * (1 - formWeight),
-      sample: matches.length,
+      gf, ga,
+      sample: matches.length,    // partidos usados realmente
+      available: pool.length,    // partidos disponibles totales
     };
   }
 
@@ -155,41 +166,50 @@
    * @param {string} opts.home                Nombre del equipo local
    * @param {string} opts.away                Nombre del equipo visitante
    * @param {Array}  opts.historicalData      Array de partidos para entrenar (RAW o subset)
-   * @param {number} [opts.formWeight=0.5]    [0..1] — peso de la forma reciente
-   * @param {string} [opts.dateLimit]         'YYYY-MM-DD' — solo cuenta partidos anteriores
+   * @param {number} [opts.slider=0.5]        [0..1] — 0 = todos los partidos del equipo
+   *                                          1 = solo el último partido. Mapeo logarítmico.
+   * @param {number} [opts.formWeight]        ALIAS de slider (compatibilidad hacia atrás)
+   * @param {string} [opts.dateLimit]         'YYYY-MM-DD' — solo partidos anteriores
    *                                          (úsalo en backtests para no mirar al futuro)
    *
    * @returns {Object} {
-   *   model_h, model_d, model_a,    // probabilidades en porcentaje (suman 100)
-   *   prob_over, prob_under,        // O/U 2.5 en porcentaje
-   *   exp_goals,                    // total goles esperados (lamH+lamA)
-   *   lamH, lamA,                   // goles esperados por equipo
-   *   sample_h, sample_a,           // tamaño de muestra usado para cada equipo
+   *   model_h, model_d, model_a,         // probabilidades 1X2 en porcentaje (suman 100)
+   *   prob_over, prob_under,             // O/U 2.5 en porcentaje
+   *   exp_goals,                         // goles esperados totales (lamH+lamA)
+   *   lamH, lamA,                        // goles esperados por equipo
+   *   sample_h, sample_a,                // partidos usados (después del slider)
+   *   available_h, available_a,          // partidos disponibles totales del equipo
    * }
    */
   function predict(opts) {
-    const { home, away, historicalData, formWeight = 0.5, dateLimit } = opts;
+    const { home, away, historicalData, dateLimit } = opts;
+    // slider es el nombre canónico; formWeight se acepta como alias
+    const sliderRaw = opts.slider != null ? opts.slider
+                    : opts.formWeight != null ? opts.formWeight
+                    : 0.5;
     if (!home || !away || !historicalData) {
       throw new Error('BetEdgeModel.predict: faltan home/away/historicalData');
     }
 
-    const fw = clip(formWeight, 0, 1);
-    const hStats = teamStats(historicalData, home, true,  fw, dateLimit);
-    const aStats = teamStats(historicalData, away, false, fw, dateLimit);
+    const slider = clip(sliderRaw, 0, 1);
+    const hStats = teamStats(historicalData, home, true,  slider, dateLimit);
+    const aStats = teamStats(historicalData, away, false, slider, dateLimit);
     const { lamH, lamA } = expectedGoals(hStats, aStats);
     const probs = convolve(lamH, lamA);
 
     return {
-      model_h:   +(probs.pH * 100).toFixed(1),
-      model_d:   +(probs.pD * 100).toFixed(1),
-      model_a:   +(probs.pA * 100).toFixed(1),
-      prob_over: +(probs.pOver  * 100).toFixed(1),
-      prob_under:+(probs.pUnder * 100).toFixed(1),
-      exp_goals: +(lamH + lamA).toFixed(2),
+      model_h:    +(probs.pH * 100).toFixed(1),
+      model_d:    +(probs.pD * 100).toFixed(1),
+      model_a:    +(probs.pA * 100).toFixed(1),
+      prob_over:  +(probs.pOver  * 100).toFixed(1),
+      prob_under: +(probs.pUnder * 100).toFixed(1),
+      exp_goals:  +(lamH + lamA).toFixed(2),
       lamH: +lamH.toFixed(3),
       lamA: +lamA.toFixed(3),
       sample_h: hStats.sample,
       sample_a: aStats.sample,
+      available_h: hStats.available,
+      available_a: aStats.available,
     };
   }
 
@@ -287,7 +307,7 @@
     selectTrainingData,
     CONFIG,
     // Helpers internos expuestos para tests o debugging
-    _internals: { teamStats, expectedGoals, convolve, poisson },
+    _internals: { teamStats, expectedGoals, convolve, poisson, windowSizeFromSlider },
   };
 
   // Browser
