@@ -1128,28 +1128,69 @@ header {
 
   <!-- API Key + Liga selector -->
   <div class="card" style="margin-bottom:16px">
-    <div style="display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:end;flex-wrap:wrap">
-      <div>
-        <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';letter-spacing:1px;margin-bottom:6px">API KEY · THE-ODDS-API.COM</div>
-        <input id="live-api-key" type="password" placeholder="Pega tu API key aquí..."
-          style="width:100%;background:var(--card2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'JetBrains Mono';font-size:13px;outline:none">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:end">
+        <div>
+          <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';letter-spacing:1px;margin-bottom:6px">API KEY · THE-ODDS-API.COM</div>
+          <input id="live-api-key" type="password" placeholder="Pega tu API key aquí..."
+            style="width:100%;background:var(--card2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'JetBrains Mono';font-size:13px;outline:none">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';letter-spacing:1px;margin-bottom:6px">LIGA</div>
+          <select id="live-league" style="background:var(--card2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'Space Grotesk';font-size:13px;outline:none;cursor:pointer;min-width:200px">
+            <option value="soccer_spain_la_liga">🇪🇸 La Liga</option>
+            <option value="soccer_epl">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+            <option value="soccer_germany_bundesliga">🇩🇪 Bundesliga</option>
+            <option value="soccer_italy_serie_a">🇮🇹 Serie A</option>
+            <option value="soccer_france_ligue_one">🇫🇷 Ligue 1</option>
+            <option value="soccer_uefa_champs_league">🏆 Champions League</option>
+          </select>
+        </div>
+        <button onclick="loadLiveOdds()" id="live-load-btn"
+          style="background:var(--green);color:#000;border:none;border-radius:8px;padding:10px 24px;font-family:'Space Grotesk';font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap"
+          onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          ⚡ Cargar partidos
+        </button>
       </div>
-      <div>
-        <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';letter-spacing:1px;margin-bottom:6px">LIGA</div>
-        <select id="live-league" style="background:var(--card2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'Space Grotesk';font-size:13px;outline:none;cursor:pointer;min-width:200px">
-          <option value="soccer_spain_la_liga">🇪🇸 La Liga</option>
-          <option value="soccer_epl">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-          <option value="soccer_germany_bundesliga">🇩🇪 Bundesliga</option>
-          <option value="soccer_italy_serie_a">🇮🇹 Serie A</option>
-          <option value="soccer_france_ligue_one">🇫🇷 Ligue 1</option>
-          <option value="soccer_uefa_champs_league">🏆 Champions League</option>
-        </select>
+
+      <!-- Mercado de predicción -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono';letter-spacing:1px;flex-shrink:0">PREDECIR:</span>
+        <div style="display:flex;gap:4px;flex-wrap:wrap" id="live-market-selector">
+          <button class="sf-btn active" data-market="1x2" title="El modelo calcula probabilidades de Local/Empate/Visitante y compara con las cuotas">🏆 Resultado 1X2</button>
+          <button class="sf-btn" data-market="over_under" title="El modelo estima los goles esperados y calcula EV en Over/Under 2.5">⚽ Over/Under 2.5</button>
+          <button class="sf-btn" data-market="both" title="Muestra análisis de ambos mercados en cada partido">🔀 Ambos</button>
+        </div>
+        <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono'">← sobre qué calcula el modelo el EV</span>
       </div>
-      <button onclick="loadLiveOdds()" id="live-load-btn"
-        style="background:var(--green);color:#000;border:none;border-radius:8px;padding:10px 24px;font-family:'Space Grotesk';font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s"
-        onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-        ⚡ Cargar partidos
-      </button>
+
+      <!-- Peso forma reciente -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono';letter-spacing:1px;flex-shrink:0">PESO FORMA:</span>
+        <div style="flex:1;min-width:220px;max-width:480px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">Solo histórico</span>
+            <span style="font-family:'JetBrains Mono';font-size:12px;font-weight:700;color:var(--green)" id="live-form-weight-label">50%</span>
+            <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">Solo reciente</span>
+          </div>
+          <input id="live-form-weight" type="range" min="0" max="100" value="50" step="10"
+            style="width:100%;accent-color:var(--green);cursor:pointer"
+            oninput="document.getElementById('live-form-weight-label').textContent=this.value+'%';
+                     document.getElementById('live-form-desc').textContent=
+                       +this.value===0?'Poisson clásico: media simple de toda la historia, sin ponderar.'
+                       :+this.value<=30?'Ligero peso a la forma: la historia manda, últimos partidos cuentan poco.'
+                       :+this.value<=50?'Equilibrado: mitad historia, mitad forma reciente.'
+                       :+this.value<=70?'Mayor peso a la forma: los últimos partidos influyen bastante.'
+                       :'Forma dominante: el modelo se basa principalmente en los últimos partidos (decay=0.92).';
+                     if(liveMatches.length) renderLiveResults(liveMatches);">
+          <div id="live-form-desc" style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-top:3px">
+            Equilibrado: mitad historia, mitad forma reciente.
+          </div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--text2);max-width:220px">
+          💡 Mueve el slider <strong style="color:var(--text)">antes o después</strong> de cargar — si ya tienes partidos cargados, el análisis se recalcula al instante.
+        </div>
+      </div>
     </div>
     <div id="live-api-status" style="margin-top:10px;font-size:11px;font-family:'JetBrains Mono';color:var(--text3)">
       Introduce tu API key y pulsa Cargar partidos. Gratis en <strong>the-odds-api.com</strong>
@@ -1363,9 +1404,16 @@ function showPage(id) {
   if (id==='goals') renderGoalsPage();
   if (id==='result') { renderResultSimulation(rBookie,rOutcome,rSeasons,rConviction,rTeams); setTimeout(initResultSimSelectors,0); }
   if (id==='live') {
-    // Pre-fill stored API key if available
     const stored = localStorage.getItem('betedge_apikey');
     if (stored) document.getElementById('live-api-key').value = stored;
+    // Wire market selector buttons
+    document.querySelectorAll('#live-market-selector .sf-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#live-market-selector .sf-btn').forEach(b=>b.classList.remove('active'));
+        this.classList.add('active');
+        renderLiveResults(liveMatches); // re-render with new market focus
+      });
+    });
   }
   if (id==='calc') initCalc();
   if (id==='stake') calcStake();
@@ -2665,6 +2713,7 @@ function filterLive(btn, f) {
 async function loadLiveOdds() {
   const apiKey = document.getElementById('live-api-key').value.trim();
   const league = document.getElementById('live-league').value;
+  const market = document.querySelector('#live-market-selector .sf-btn.active')?.dataset.market || '1x2';
   const btn    = document.getElementById('live-load-btn');
   const status = document.getElementById('live-api-status');
   const results= document.getElementById('live-results');
@@ -2764,13 +2813,19 @@ async function loadLiveOdds() {
       const useData2 = RAW.filter(r=>['2022-23','2023-24','2024-25','2025-26'].includes(r.season));
 
       function wStats2(team, isHome) {
+        const fw  = +(document.getElementById('live-form-weight')?.value || 50) / 100;
         const gK=isHome?'fthg':'ftag', gaK=isHome?'ftag':'fthg';
         const ms=RAW.filter(r=>(isHome?r.home===team:r.away===team)&&r[gK]!=null)
           .sort((a,b)=>b.date.localeCompare(a.date)).slice(0,15);
         if(!ms.length) return{gf:1.3,ga:1.2};
+        // Simple average
+        const sgf = ms.reduce((s,m)=>s+(m[gK]||0),0)/ms.length;
+        const sga = ms.reduce((s,m)=>s+(m[gaK]||0),0)/ms.length;
+        if (fw === 0) return {gf:sgf, ga:sga};
+        // Weighted with decay
         const DECAY=0.92; let wgf=0,wga=0,ws=0;
         ms.forEach((m,i)=>{const w=Math.pow(DECAY,i);wgf+=(m[gK]||0)*w;wga+=(m[gaK]||0)*w;ws+=w;});
-        return{gf:wgf/ws,ga:wga/ws};
+        return{gf:(wgf/ws)*fw+sgf*(1-fw), ga:(wga/ws)*fw+sga*(1-fw)};
       }
 
       const hs=wStats2(home,true); const as2=wStats2(away,false);
@@ -2819,9 +2874,27 @@ async function loadLiveOdds() {
 }
 
 function renderLiveResults(matches) {
-  const filtered = matches.filter(m => {
-    if (liveFilter==='value') return m.bestEV > 0.07;
-    if (liveFilter==='high')  return m.bestEV > 0.15;
+  const activeMarket = document.querySelector('#live-market-selector .sf-btn.active')?.dataset.market || '1x2';
+  const show1x2 = activeMarket === '1x2' || activeMarket === 'both';
+  const showOU  = activeMarket === 'over_under' || activeMarket === 'both';
+
+  // Sort by most relevant EV for the selected market
+  const sorted = [...matches].sort((a,b) => {
+    if (activeMarket === 'over_under') return Math.max(b.evO||0, b.evU||0) - Math.max(a.evO||0, a.evU||0);
+    return b.bestEV - a.bestEV;
+  });
+
+  const filtered = sorted.filter(m => {
+    if (liveFilter==='value') {
+      if (activeMarket==='over_under') return Math.max(m.evO||0,m.evU||0) > 0.07;
+      if (activeMarket==='1x2')        return m.bestEV > 0.07;
+      return m.bestEV > 0.07 || Math.max(m.evO||0,m.evU||0) > 0.07;
+    }
+    if (liveFilter==='high') {
+      if (activeMarket==='over_under') return Math.max(m.evO||0,m.evU||0) > 0.15;
+      if (activeMarket==='1x2')        return m.bestEV > 0.15;
+      return m.bestEV > 0.15 || Math.max(m.evO||0,m.evU||0) > 0.15;
+    }
     return true;
   });
 
@@ -2837,101 +2910,149 @@ function renderLiveResults(matches) {
     unibet:'Unibet',williamhill:'William Hill',betway:'Betway'
   }[k] || k);
 
-  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">` +
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px">` +
   filtered.map(m => {
     const bestEV = m.bestEV;
-    const cls    = bestEV>0.15?'value-high':bestEV>0.07?'value-med':'value-low';
-    const evH    = m.evH, evD=m.evD, evA=m.evA;
-    const isVH   = evH>0.07, isVD=evD>0.07, isVA=evA>0.07;
-    const isVO   = m.evO>0.07, isVU=m.evU>0.07;
+    const ouBest = Math.max(m.evO||0, m.evU||0);
+    const evH = m.evH, evD=m.evD, evA=m.evA;
+    const isVH = evH>0.07, isVD=evD>0.07, isVA=evA>0.07;
+    const isVO = m.evO>0.07, isVU=m.evU>0.07;
+    const hasValue1x2 = bestEV>0.07;
+    const hasValueOU  = ouBest>0.07;
+    const anyValue    = hasValue1x2||hasValueOU;
 
-    // Best bookmaker badges
-    const bestBkBadge = m.bestBkH ? `<span class="badge-sm odds-badge">🏆 Mejor cuota local: ${bkName(m.bestBkH)} @${m.maxH}</span>` : '';
-    const bestABadge  = m.bestBkA ? `<span class="badge-sm odds-badge">🏆 Mejor cuota visit: ${bkName(m.bestBkA)} @${m.maxA}</span>` : '';
+    const bkName = k => ({pinnacle:'Pinnacle',bet365:'Bet365',betfair_ex_eu:'Betfair',unibet:'Unibet',williamhill:'W.Hill',betway:'Betway'}[k]||k);
 
-    // Bookmaker odds table
+    // ── Compact signal badges
+    const signals = [];
+    if (isVH) signals.push(`<span style="font-size:10px;background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.3);border-radius:4px;padding:2px 7px;font-family:'JetBrains Mono';font-weight:700">1 +${(evH*100).toFixed(0)}%</span>`);
+    if (isVD) signals.push(`<span style="font-size:10px;background:rgba(255,214,0,0.12);color:var(--yellow);border:1px solid rgba(255,214,0,0.3);border-radius:4px;padding:2px 7px;font-family:'JetBrains Mono';font-weight:700">X +${(evD*100).toFixed(0)}%</span>`);
+    if (isVA) signals.push(`<span style="font-size:10px;background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.3);border-radius:4px;padding:2px 7px;font-family:'JetBrains Mono';font-weight:700">2 +${(evA*100).toFixed(0)}%</span>`);
+    if (isVO) signals.push(`<span style="font-size:10px;background:rgba(71,195,247,0.12);color:var(--blue);border:1px solid rgba(71,195,247,0.3);border-radius:4px;padding:2px 7px;font-family:'JetBrains Mono';font-weight:700">OV +${(m.evO*100).toFixed(0)}%</span>`);
+    if (isVU) signals.push(`<span style="font-size:10px;background:rgba(71,195,247,0.12);color:var(--blue);border:1px solid rgba(71,195,247,0.3);border-radius:4px;padding:2px 7px;font-family:'JetBrains Mono';font-weight:700">UN +${(m.evU*100).toFixed(0)}%</span>`);
+
+    // ── Bookmaker rows
     const bkRows = Object.entries(m.bookOdds).map(([bk,o])=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--bg2);border-radius:5px;font-size:11px">
-        <span style="color:var(--text2);font-family:'JetBrains Mono';width:110px">${bkName(bk)}</span>
-        <span style="color:${o.h===m.maxH?'var(--green)':'var(--text)'};font-family:'JetBrains Mono';font-weight:${o.h===m.maxH?'700':'400'}">${o.h||'—'}</span>
-        <span style="color:${o.d===m.maxD?'var(--yellow)':'var(--text)'};font-family:'JetBrains Mono';font-weight:${o.d===m.maxD?'700':'400'}">${o.d||'—'}</span>
-        <span style="color:${o.a===m.maxA?'var(--green)':'var(--text)'};font-family:'JetBrains Mono';font-weight:${o.a===m.maxA?'700':'400'}">${o.a||'—'}</span>
+        <span style="color:var(--text2);font-family:'JetBrains Mono';width:90px">${bkName(bk)}</span>
+        <span style="color:${o.h===m.maxH?'var(--green)':'var(--text)'};font-family:'JetBrains Mono';font-weight:${o.h===m.maxH?700:400}">${o.h||'—'}</span>
+        <span style="color:${o.d===m.maxD?'var(--yellow)':'var(--text)'};font-family:'JetBrains Mono';font-weight:${o.d===m.maxD?700:400}">${o.d||'—'}</span>
+        <span style="color:${o.a===m.maxA?'var(--green)':'var(--text)'};font-family:'JetBrains Mono';font-weight:${o.a===m.maxA?700:400}">${o.a||'—'}</span>
         ${o.over?`<span style="color:var(--blue);font-family:'JetBrains Mono';font-size:10px">O:${o.over} U:${o.under}</span>`:'<span></span>'}
       </div>`).join('');
 
-    return `<div class="match-card ${cls}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div>
-          <div style="font-size:16px;font-weight:700">${m.home} <span style="color:var(--text3);font-weight:400;margin:0 6px">vs</span> ${m.away}</div>
-          <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';margin-top:3px">${m.date} · ${m.nBookmakers} casas</div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-          ${bestEV>0.07?`<span class="tag tag-green">⚡ EV +${(bestEV*100).toFixed(0)}%</span>`:''}
-          ${bestEV>0.15?`<span class="tag tag-yellow">🔥 ALTA CONV.</span>`:''}
-        </div>
-      </div>
+    return `
+    <details style="background:var(--card2);border:1px solid ${anyValue?'rgba(0,230,118,0.3)':'var(--border)'};border-radius:10px;overflow:hidden">
+      <summary style="list-style:none;cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:12px;user-select:none"
+        onmouseover="this.parentElement.style.borderColor='var(--border2)'"
+        onmouseout="this.parentElement.style.borderColor='${anyValue?'rgba(0,230,118,0.3)':'var(--border)'}'">
 
-      <!-- Prob bars -->
-      <div style="margin-bottom:10px">
-        <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-bottom:3px">MODELO POISSON</div>
-        <div class="prob-bar-container">
-          <div class="prob-bar-h" style="width:${m.mh}%">${m.mh>12?m.mh+'%':''}</div>
-          <div class="prob-bar-d" style="width:${m.md}%">${m.md>10?m.md+'%':''}</div>
-          <div class="prob-bar-a" style="width:${m.ma}%">${m.ma>12?m.ma+'%':''}</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-top:3px">
-          <span>${m.home.split(' ')[0]} ${m.mh}%</span><span>Empate ${m.md}%</span><span>${m.away.split(' ')[0]} ${m.ma}%</span>
-        </div>
-      </div>
+        <!-- Indicator dot -->
+        <div style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:${anyValue?'var(--green)':'var(--text3)'}"></div>
 
-      <!-- EV cells -->
-      <div class="match-probs" style="margin-bottom:10px">
-        <div class="prob-cell" style="${isVH?'border-color:rgba(0,230,118,0.5);background:rgba(0,230,118,0.05)':''}">
-          ${isVH?'<div style="position:absolute;top:3px;right:5px;font-size:8px;font-family:JetBrains Mono;color:var(--green);font-weight:700">VALUE</div>':''}
-          <div class="prob-label">LOCAL</div>
-          <div class="prob-model" style="color:${isVH?'var(--green)':'var(--text)'}">${m.mh}%</div>
-          <div style="font-size:13px;font-weight:700;color:var(--blue);margin:3px 0">@${m.avgH||'—'}</div>
-          <div style="font-size:11px;font-family:'JetBrains Mono';color:${evH>0?'var(--green)':'var(--text3)'}">EV ${evH!=null?(evH>=0?'+':'')+((evH||0)*100).toFixed(1)+'%':'—'}</div>
-        </div>
-        <div class="prob-cell" style="${isVD?'border-color:rgba(255,214,0,0.5);background:rgba(255,214,0,0.05)':''}">
-          ${isVD?'<div style="position:absolute;top:3px;right:5px;font-size:8px;font-family:JetBrains Mono;color:var(--yellow);font-weight:700">VALUE</div>':''}
-          <div class="prob-label">EMPATE</div>
-          <div class="prob-model" style="color:${isVD?'var(--yellow)':'var(--text)'}">${m.md}%</div>
-          <div style="font-size:13px;font-weight:700;color:var(--blue);margin:3px 0">@${m.avgD||'—'}</div>
-          <div style="font-size:11px;font-family:'JetBrains Mono';color:${evD>0?'var(--green)':'var(--text3)'}">EV ${evD!=null?(evD>=0?'+':'')+((evD||0)*100).toFixed(1)+'%':'—'}</div>
-        </div>
-        <div class="prob-cell" style="${isVA?'border-color:rgba(0,230,118,0.5);background:rgba(0,230,118,0.05)':''}">
-          ${isVA?'<div style="position:absolute;top:3px;right:5px;font-size:8px;font-family:JetBrains Mono;color:var(--green);font-weight:700">VALUE</div>':''}
-          <div class="prob-label">VISITANTE</div>
-          <div class="prob-model" style="color:${isVA?'var(--green)':'var(--text)'}">${m.ma}%</div>
-          <div style="font-size:13px;font-weight:700;color:var(--blue);margin:3px 0">@${m.avgA||'—'}</div>
-          <div style="font-size:11px;font-family:'JetBrains Mono';color:${evA>0?'var(--green)':'var(--text3)'}">EV ${evA!=null?(evA>=0?'+':'')+((evA||0)*100).toFixed(1)+'%':'—'}</div>
-        </div>
-      </div>
-
-      <!-- Over/Under -->
-      ${m.avgOver ? `<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <div style="background:${isVO?'rgba(0,230,118,0.08)':'var(--bg2)'};border:1px solid ${isVO?'rgba(0,230,118,0.3)':'var(--border)'};border-radius:7px;padding:8px 12px;display:flex;gap:12px;align-items:center">
-          <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono'">⚽ Goles esp: <strong style="color:var(--blue)">${m.eg}</strong></span>
-          <span style="font-size:11px;color:var(--text3)">Over: <strong style="color:${isVO?'var(--green)':'var(--text)'}">${m.pOver}%</strong> @${m.avgOver} ${m.evO!=null?'EV '+(m.evO>=0?'+':'')+((m.evO||0)*100).toFixed(1)+'%':''}</span>
-          <span style="font-size:11px;color:var(--text3)">Under: <strong style="color:${isVU?'var(--green)':'var(--text)'}">${100-m.pOver}%</strong> @${m.avgUnder} ${m.evU!=null?'EV '+(m.evU>=0?'+':'')+((m.evU||0)*100).toFixed(1)+'%':''}</span>
-        </div>
-        ${m.margin!=null?`<span class="badge-sm margin-badge">Margen casa: ${m.margin}%</span>`:''}
-      </div>` : ''}
-
-      <!-- Bookmaker comparison (collapsible) -->
-      <details style="margin-top:4px">
-        <summary style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';cursor:pointer;padding:4px 0">
-          📊 Ver cuotas por casa (${m.nBookmakers}) ${bestBkBadge}${bestABadge}
-        </summary>
-        <div style="margin-top:8px">
-          <div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">
-            <span style="width:110px">CASA</span><span>LOCAL</span><span>EMPATE</span><span>VISIT.</span><span>O/U</span>
+        <!-- Teams + date -->
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${m.home} <span style="color:var(--text3);font-weight:400">vs</span> ${m.away}
           </div>
-          ${bkRows}
+          <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-top:2px">${m.date} · ${m.nBookmakers} casas</div>
         </div>
-      </details>
-    </div>`;
+
+        <!-- Avg odds quick view -->
+        <div style="display:flex;gap:6px;font-family:'JetBrains Mono';font-size:12px;flex-shrink:0">
+          <span style="color:var(--green)">1:${m.avgH||'—'}</span>
+          <span style="color:var(--yellow)">X:${m.avgD||'—'}</span>
+          <span style="color:var(--blue)">2:${m.avgA||'—'}</span>
+        </div>
+
+        <!-- Value signals -->
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;max-width:200px">
+          ${signals.length ? signals.join('') : `<span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">sin value</span>`}
+        </div>
+
+        <!-- Expand arrow -->
+        <div style="color:var(--text3);font-size:12px;flex-shrink:0;transition:transform .2s" class="details-arrow">▾</div>
+      </summary>
+
+      <!-- ── EXPANDED CONTENT ── -->
+      <div style="padding:16px;border-top:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-bottom:12px">
+          Peso forma reciente: <strong style="color:var(--green)">${document.getElementById('live-form-weight')?.value||50}%</strong>
+          · ${+( document.getElementById('live-form-weight')?.value||50)===0?'Poisson clásico':+( document.getElementById('live-form-weight')?.value||50)<=50?'modelo equilibrado':'forma reciente dominante'}
+        </div>
+
+        ${show1x2 ? `
+        <!-- 1X2 Analysis -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';letter-spacing:1px;margin-bottom:6px">MODELO POISSON · RESULTADO 1X2</div>
+          <div class="prob-bar-container" style="margin-bottom:6px">
+            <div class="prob-bar-h" style="width:${m.mh}%">${m.mh>12?m.mh+'%':''}</div>
+            <div class="prob-bar-d" style="width:${m.md}%">${m.md>10?m.md+'%':''}</div>
+            <div class="prob-bar-a" style="width:${m.ma}%">${m.ma>12?m.ma+'%':''}</div>
+          </div>
+          <div class="match-probs">
+            <div class="prob-cell" style="${isVH?'border-color:rgba(0,230,118,0.5);background:rgba(0,230,118,0.05)':''}">
+              ${isVH?'<div style="position:absolute;top:3px;right:5px;font-size:8px;font-family:JetBrains Mono;color:var(--green);font-weight:700">VALUE</div>':''}
+              <div class="prob-label">LOCAL</div>
+              <div class="prob-model" style="color:${isVH?'var(--green)':'var(--text)'}">${m.mh}%</div>
+              <div style="font-size:13px;font-weight:700;color:var(--blue);margin:3px 0">@${m.avgH||'—'}</div>
+              <div style="font-size:11px;font-family:'JetBrains Mono';color:${evH>0?'var(--green)':'var(--text3)'}">EV ${evH!=null?(evH>=0?'+':'')+((evH||0)*100).toFixed(1)+'%':'—'}</div>
+            </div>
+            <div class="prob-cell" style="${isVD?'border-color:rgba(255,214,0,0.5);background:rgba(255,214,0,0.05)':''}">
+              ${isVD?'<div style="position:absolute;top:3px;right:5px;font-size:8px;font-family:JetBrains Mono;color:var(--yellow);font-weight:700">VALUE</div>':''}
+              <div class="prob-label">EMPATE</div>
+              <div class="prob-model" style="color:${isVD?'var(--yellow)':'var(--text)'}">${m.md}%</div>
+              <div style="font-size:13px;font-weight:700;color:var(--blue);margin:3px 0">@${m.avgD||'—'}</div>
+              <div style="font-size:11px;font-family:'JetBrains Mono';color:${evD>0?'var(--green)':'var(--text3)'}">EV ${evD!=null?(evD>=0?'+':'')+((evD||0)*100).toFixed(1)+'%':'—'}</div>
+            </div>
+            <div class="prob-cell" style="${isVA?'border-color:rgba(0,230,118,0.5);background:rgba(0,230,118,0.05)':''}">
+              ${isVA?'<div style="position:absolute;top:3px;right:5px;font-size:8px;font-family:JetBrains Mono;color:var(--green);font-weight:700">VALUE</div>':''}
+              <div class="prob-label">VISITANTE</div>
+              <div class="prob-model" style="color:${isVA?'var(--green)':'var(--text)'}">${m.ma}%</div>
+              <div style="font-size:13px;font-weight:700;color:var(--blue);margin:3px 0">@${m.avgA||'—'}</div>
+              <div style="font-size:11px;font-family:'JetBrains Mono';color:${evA>0?'var(--green)':'var(--text3)'}">EV ${evA!=null?(evA>=0?'+':'')+((evA||0)*100).toFixed(1)+'%':'—'}</div>
+            </div>
+          </div>
+        </div>` : ''}
+
+        ${showOU && m.avgOver ? `
+        <!-- O/U Analysis -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';letter-spacing:1px;margin-bottom:6px">MODELO POISSON · OVER/UNDER 2.5</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div style="background:var(--bg2);border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-bottom:3px">GOLES ESP.</div>
+              <div style="font-size:22px;font-weight:700;color:var(--blue)">${m.eg}</div>
+            </div>
+            <div style="background:${isVO?'rgba(0,230,118,0.08)':'var(--bg2)'};border:1px solid ${isVO?'rgba(0,230,118,0.3)':'var(--border)'};border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-bottom:3px">▲ OVER 2.5</div>
+              <div style="font-size:18px;font-weight:700;color:${isVO?'var(--green)':'var(--text)'}">${m.pOver}%</div>
+              <div style="font-size:12px;color:var(--blue)">@${m.avgOver}</div>
+              <div style="font-size:11px;font-family:'JetBrains Mono';color:${m.evO>0?'var(--green)':'var(--text3)'}">EV ${m.evO!=null?(m.evO>=0?'+':'')+((m.evO||0)*100).toFixed(1)+'%':'—'}</div>
+            </div>
+            <div style="background:${isVU?'rgba(0,230,118,0.08)':'var(--bg2)'};border:1px solid ${isVU?'rgba(0,230,118,0.3)':'var(--border)'};border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono';margin-bottom:3px">▼ UNDER 2.5</div>
+              <div style="font-size:18px;font-weight:700;color:${isVU?'var(--green)':'var(--text)'}">${100-m.pOver}%</div>
+              <div style="font-size:12px;color:var(--blue)">@${m.avgUnder}</div>
+              <div style="font-size:11px;font-family:'JetBrains Mono';color:${m.evU>0?'var(--green)':'var(--text3)'}">EV ${m.evU!=null?(m.evU>=0?'+':'')+((m.evU||0)*100).toFixed(1)+'%':'—'}</div>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- Bookmaker table -->
+        <details style="margin-top:4px">
+          <summary style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';cursor:pointer;padding:4px 0">
+            📊 Cuotas por casa (${m.nBookmakers}) — mejor local: ${m.maxH||'—'} · mejor visit: ${m.maxA||'—'}
+          </summary>
+          <div style="margin-top:8px">
+            <div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">
+              <span style="width:90px">CASA</span><span>1</span><span>X</span><span>2</span><span>O/U</span>
+            </div>
+            ${bkRows}
+          </div>
+        </details>
+      </div>
+    </details>`;
   }).join('') + '</div>';
 }
 
